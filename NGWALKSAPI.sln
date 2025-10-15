@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.13.35919.96 d17.13
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NGWALKSAPI", "NGWALKSAPI.csproj", "{70DFBC22-60F1-5A6A-6CC2-E62614D1F72D}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{70DFBC22-60F1-5A6A-6CC2-E62614D1F72D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{70DFBC22-60F1-5A6A-6CC2-E62614D1F72D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{70DFBC22-60F1-5A6A-6CC2-E62614D1F72D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{70DFBC22-60F1-5A6A-6CC2-E62614D1F72D}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {E9EEC580-1468-4FF8-B777-FAB46552D4A5}
+	EndGlobalSection
+EndGlobal
