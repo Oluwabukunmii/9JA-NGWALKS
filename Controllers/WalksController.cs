@@ -144,7 +144,7 @@ namespace NGWALKSAPI.Controllers
             return Ok(mapper.Map<WalkDto>(walkDomainModel));
 
 
-            //testing someting
+            
 
         }
     }
