@@ -43,6 +43,8 @@ namespace NGWALKSAPI.Controllers
             //Map domain model to Dto
             return Ok(mapper.Map<WalkDto>(walkDomainModel));
 
+            //testing something
+
 
 
 
