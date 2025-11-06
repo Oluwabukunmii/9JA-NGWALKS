@@ -65,7 +65,7 @@ namespace NGWALKSAPI.Controllers
                       });
                   }*/
 
-                logger.LogInformation($"Finished GetAllRegions request with data : {JsonSerializer.Serialize(regionsDomains)}");
+                logger.LogInformation($"Finished GetAllRegions request with data : {JsonSerializer.Serialize(regionsDomains)}"); //in my understanding , decomposes jason object
 
 
                 var regionDto = mapper.Map<List<RegionDto>>(regionsDomains);

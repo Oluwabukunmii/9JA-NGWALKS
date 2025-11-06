@@ -6,8 +6,10 @@ using NGWALKSAPI.API.Repositories;
 
 namespace NGWALKSAPI.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("api/v{version:apiVersion}/[controller]")]
     [ApiController]
+    [ApiVersion("1.0")]
+    [ApiVersion("2.0")]
     public class ImageController : ControllerBase
     {
         private readonly IimageRespository imageRespository;
@@ -17,63 +19,78 @@ namespace NGWALKSAPI.Controllers
             this.imageRespository = imageRespository;
         }
 
-        [HttpPost]
-
-        [Route("Upload")]
-
-        public async Task<IActionResult> Upload([FromForm] ImageUploadRequestDto request)
-
+        //  VERSION 1 
+        [MapToApiVersion("1.0")]
+        [HttpPost("upload")]
+        public async Task<IActionResult> UploadV1([FromForm] ImageUploadRequestDtoV1 request)
         {
-            VaildateFileUpload(request);
+            ValidateFileUpload(request.File);
 
-            if (ModelState.IsValid)
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            var imageDomainModel = new Image
             {
+                file = request.File,
+                fileExtension = Path.GetExtension(request.File.FileName),
+                fileSizeInByte = request.File.Length,
+                fileName = request.Filename,  // DTO’s Filename property
+                fileDescription = request.fileDescription
+            };
 
-                // Convert image to domain model
+            await imageRespository.Upload(imageDomainModel);
 
-                var imageDomainModel = new Image
-
-                {
-                    file = request.File,
-
-                    fileExtension = Path.GetExtension(request.File.FileName),
-
-                    fileSizeInByte = request.File.Length,
-
-                    fileName = request.File.FileName,
-
-                    fileDescription = request.fileDescription,
-
-                    
-
-                };
-
-                //User repository to upload image
-
-                await imageRespository.Upload(imageDomainModel);
-
-                return Ok(imageDomainModel);
-
-            }
-
-            return BadRequest(ModelState);
-
+            return Ok(new
+            {
+                Version = "1.0",
+                imageDomainModel.fileName,
+                imageDomainModel.fileDescription
+            });
         }
 
-
-        private void VaildateFileUpload(ImageUploadRequestDto request)
+        //  VERSION 2 
+        [MapToApiVersion("2.0")]
+        [HttpPost("upload")]
+        public async Task<IActionResult> UploadV2([FromForm] ImageUploadRequestDtoV2 request)
         {
+            ValidateFileUpload(request.File);
 
-            var allowedExtensions = new string[] { ".jpg", ".jpeg", ".png" };
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
 
-            if (!allowedExtensions.Contains(Path.GetExtension(request.File.FileName)))
-
+            var imageDomainModel = new Image
             {
-                ModelState.AddModelError("file", "Unsupported file extension");
+                file = request.File,
+                fileExtension = Path.GetExtension(request.File.FileName),
+                fileSizeInByte = request.File.Length,
+                fileName = request.MyFilename, //  V2's MyFilename
+                fileDescription = request.fileDescription
+            };
+
+            await imageRespository.Upload(imageDomainModel);
+
+            return Ok(new
+            {
+                Version = "2.0",
+                imageDomainModel.fileName,
+                imageDomainModel.fileDescription
+            });
+        }
+
+        // ======= Common Validation =======
+        private void ValidateFileUpload(IFormFile file)
+        {
+            var allowedExtensions = new[] { ".jpg", ".jpeg", ".png" };
+            var extension = Path.GetExtension(file.FileName);
+
+            if (!allowedExtensions.Contains(extension, StringComparer.OrdinalIgnoreCase))
+            {
+                ModelState.AddModelError("file", "Unsupported file extension.");
             }
-            if (request.File.Length > 10485750)
+
+            if (file.Length > 10 * 1024 * 1024) // 10MB
             {
-                ModelState.AddModelError("file", "File size more than 10MB , please upload a smaller size file");
+                ModelState.AddModelError("file", "File size exceeds 10MB limit.");
             }
         }
     }

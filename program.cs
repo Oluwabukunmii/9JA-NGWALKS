@@ -1,4 +1,4 @@
-using System.Text;
+﻿using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -10,64 +10,79 @@ using Microsoft.Extensions.FileProviders;
 using Serilog;
 using NGWALKSAPI.Mappings;
 using NGWALKSAPI.MiddleWare;
+using Microsoft.AspNetCore.Mvc.ApiExplorer;
+using Microsoft.AspNetCore.Mvc.Versioning;
+using Microsoft.Extensions.Options;
+using Swashbuckle.AspNetCore.SwaggerGen;
+using NGWALKSAPI;
 
 var builder = WebApplication.CreateBuilder(args);
 
-
 var logger = new LoggerConfiguration()
     .WriteTo.Console()
-    .WriteTo.File("Logs/NGWALKS_log.txt", rollingInterval:RollingInterval.Day)
+    .WriteTo.File("Logs/NGWALKS_log.txt", rollingInterval: RollingInterval.Day)
     .MinimumLevel.Warning()
     .CreateLogger();
-
 
 builder.Logging.ClearProviders();
 builder.Logging.AddSerilog(logger);
 
 // Add services to the container.
-
 builder.Services.AddControllers();
 
-builder.Services.AddHttpContextAccessor();
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen( options =>
+// ---------------- API VERSIONING ----------------
+builder.Services.AddApiVersioning(options =>
 {
-    options.SwaggerDoc("v1", new OpenApiInfo { Title = " NG Walks Api", Version = "v1" });
+    options.AssumeDefaultVersionWhenUnspecified = true;
+    options.DefaultApiVersion = new Microsoft.AspNetCore.Mvc.ApiVersion(1, 0);
+    options.ReportApiVersions = true;
+    options.ApiVersionReader = new UrlSegmentApiVersionReader(); //URL segment versioning
+});
+
+builder.Services.AddVersionedApiExplorer(options =>
+{
+    options.GroupNameFormat = "'v'VVV";
+    options.SubstituteApiVersionInUrl = true;
+});
+// ------------------------------------------------
+
+builder.Services.AddHttpContextAccessor();
+
+// ---------------- SWAGGER ----------------
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen(options =>
+{
+    // ConfigureSwaggerOptions handles version docs
     options.AddSecurityDefinition(JwtBearerDefaults.AuthenticationScheme, new OpenApiSecurityScheme
     {
         Name = "Authorization",
         In = ParameterLocation.Header,
         Type = SecuritySchemeType.ApiKey,
         Scheme = JwtBearerDefaults.AuthenticationScheme,
-
-
     });
 
     options.AddSecurityRequirement(new OpenApiSecurityRequirement
-
-   {
-          {
-        new OpenApiSecurityScheme
+    {
         {
-             Reference = new OpenApiReference
-          {
-            Type = ReferenceType.SecurityScheme,
-            Id = JwtBearerDefaults.AuthenticationScheme
-          },
-
-             Scheme ="Oauth2",
-             Name = JwtBearerDefaults.AuthenticationScheme,
-             In = ParameterLocation.Header
-
-          },
-
-        new List<string>()
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = JwtBearerDefaults.AuthenticationScheme
+                },
+                Scheme = "Oauth2",
+                Name = JwtBearerDefaults.AuthenticationScheme,
+                In = ParameterLocation.Header
+            },
+            new List<string>()
         }
-   } );
+    });
+});
 
-}
-);
+// ✅ version-aware Swagger configuration
+builder.Services.AddTransient<IConfigureOptions<SwaggerGenOptions>, ConfigureSwaggerOptions>();
+// ------------------------------------------------
 
 builder.Services.AddDbContext<NGWALKSDBCONTEXT>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("NGWALKSConnectionString")));
@@ -79,7 +94,6 @@ builder.Services.AddScoped<IRegionRepository, SqlRegionRepository>();
 builder.Services.AddScoped<IWalkRepository, SqlWalkRepository>();
 builder.Services.AddScoped<ITokenRepository, TokenRepository>();
 builder.Services.AddScoped<IimageRespository, LocalImageRespository>();
-
 
 builder.Services.AddAutoMapper(typeof(AutoMapperProfiles));
 
@@ -117,32 +131,34 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+var versionDescriptionProvider = app.Services.GetRequiredService<IApiVersionDescriptionProvider>();
+
+// ---------------- SWAGGER UI ----------------
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
-    app.UseSwaggerUI();
+    app.UseSwaggerUI(options =>
+    {
+        foreach (var description in versionDescriptionProvider.ApiVersionDescriptions)
+        {
+            options.SwaggerEndpoint($"/swagger/{description.GroupName}/swagger.json",
+                description.GroupName.ToUpperInvariant());
+        }
+    });
 }
-
+// ------------------------------------------------
 
 app.UseMiddleware<ExceptionHandlerMiddleware>();
-
 app.UseHttpsRedirection();
 
 app.UseAuthentication();
 app.UseAuthorization();
 
-
 app.UseStaticFiles(new StaticFileOptions
-
 {
     FileProvider = new PhysicalFileProvider(Path.Combine(Directory.GetCurrentDirectory(), "Imagesfolder")),
-
     RequestPath = "/Imagesfolder"
-}
-    
- );
+});
 
 app.MapControllers();
-
 app.Run();
